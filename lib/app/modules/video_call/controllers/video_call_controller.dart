@@ -1,10 +1,12 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class VideoCallController extends GetxController {
   // ========================= arguments =======================================
   Rx<String?> role = Rx(null);
+
   // ========================= agora config ====================================
   final String appId =
       "3219b2cd9f8e4e618a6639f63b17035d"; // Replace with your Agora App ID
@@ -17,60 +19,103 @@ class VideoCallController extends GetxController {
   Rx<List<int>> remoteUids = Rx([]);
   Rx<bool> isTeacher = false.obs;
 
+  Rx<int?> userId = Rx(null);
+  Rx<bool> localUserJoined = false.obs;
+
+//   Future<void> initAgora() async {
+//     // ========================= Request Permissions ====================================
+//     await [Permission.microphone, Permission.camera].request();
+
+//     // Initialize Agora Engine
+//     // _engine = createAgoraRtcEngine();
+//     // engine = createAgoraRtcEngine();
+//     await engine.initialize(RtcEngineContext(appId: appId));
+
+//     // Set event handlers
+//     engine.registerEventHandler(
+//       RtcEngineEventHandler(
+//         onUserJoined: (RtcConnection connection, int elapsed, int uid) {
+//           remoteUids.value.add(uid);
+//           remoteUids.refresh();
+//         },
+//         onUserOffline: (RtcConnection connection, int uid,
+//             UserOfflineReasonType userOfflineReasonType) {
+//           remoteUids.value.remove(uid);
+//           remoteUids.refresh();
+//         },
+//       ),
+//     );
+
+//     // Set channel profile and role
+//     await engine
+//         .setChannelProfile(ChannelProfileType.channelProfileLiveBroadcasting);
+
+//     if (isTeacher.value) {
+//       await engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+//     } else {
+//       await engine.setClientRole(role: ClientRoleType.clientRoleAudience);
+//     }
+
+//     // Enable the video module
+//     await engine.enableVideo();
+// // Enable local video preview
+//     await engine.startPreview();
+
+//     // Join the channel
+//     await engine.joinChannel(
+//       token: token,
+//       channelId: channelName,
+//       uid: 0,
+//       options: const ChannelMediaOptions(
+//         // Automatically subscribe to all video streams
+//         autoSubscribeVideo: true,
+//         // Automatically subscribe to all audio streams
+//         autoSubscribeAudio: true,
+//         // Publish camera video
+//         publishCameraTrack: true,
+//         // Publish microphone audio
+//         publishMicrophoneTrack: true,
+//       ),
+//     );
+//   }
+
   Future<void> initAgora() async {
-    // ========================= Request Permissions ====================================
+    // ========================== retrieve permissions ================================
     await [Permission.microphone, Permission.camera].request();
 
-    // Initialize Agora Engine
-    // _engine = createAgoraRtcEngine();
-    // engine = createAgoraRtcEngine();
-    await engine.initialize(RtcEngineContext(appId: appId));
+    await engine.initialize(RtcEngineContext(
+      appId: appId,
+      channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+    ));
 
-    // Set event handlers
     engine.registerEventHandler(
       RtcEngineEventHandler(
-        onUserJoined: (RtcConnection connection, int elapsed, int uid) {
-          remoteUids.value.add(uid);
-          remoteUids.refresh();
+        onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
+          debugPrint("local user ${connection.localUid} joined");
+          localUserJoined.value = true;
         },
-        onUserOffline: (RtcConnection connection, int uid,
-            UserOfflineReasonType userOfflineReasonType) {
-          remoteUids.value.remove(uid);
-          remoteUids.refresh();
+        onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
+          debugPrint("remote user $remoteUid joined");
+          userId.value = remoteUid;
         },
+        onUserOffline: (RtcConnection connection, int remoteUid,
+            UserOfflineReasonType reason) {
+          debugPrint("remote user $remoteUid left channel");
+          userId.value = null;
+        },
+        onTokenPrivilegeWillExpire: (RtcConnection connection, String token) {},
       ),
     );
 
-    // Set channel profile and role
-    await engine
-        .setChannelProfile(ChannelProfileType.channelProfileLiveBroadcasting);
-
-    if (isTeacher.value) {
-      await engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
-    } else {
-      await engine.setClientRole(role: ClientRoleType.clientRoleAudience);
-    }
-
-    // Enable the video module
+    await engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
     await engine.enableVideo();
-// Enable local video preview
     await engine.startPreview();
 
-    // Join the channel
     await engine.joinChannel(
       token: token,
       channelId: channelName,
       uid: 0,
-      options: const ChannelMediaOptions(
-        // Automatically subscribe to all video streams
-        autoSubscribeVideo: true,
-        // Automatically subscribe to all audio streams
-        autoSubscribeAudio: true,
-        // Publish camera video
-        publishCameraTrack: true,
-        // Publish microphone audio
-        publishMicrophoneTrack: true,
-      ),
+      options: const ChannelMediaOptions(),
     );
   }
 

@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../controllers/video_call_controller.dart';
 
 class VideoCallView extends GetView<VideoCallController> {
-  const VideoCallView({Key? key}) : super(key: key);
+  const VideoCallView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,57 +12,46 @@ class VideoCallView extends GetView<VideoCallController> {
       appBar: AppBar(
         centerTitle: true,
         title: Obx(() {
-          return Text(
-              controller.isTeacher.value ? 'Teacher View' : 'Student View');
+          if (controller.isTeacher.value) {
+            return Text('Teacher View');
+          } else {
+            return Text('Student View');
+          }
         }),
       ),
       body: Stack(
         children: [
-          // Display Remote Users in a Grid
           Obx(() {
-            return Padding(
-              padding: const EdgeInsets.only(
-                  top: 120.0), // Leaves space for local video
-              child: GridView.builder(
-                padding: const EdgeInsets.all(8.0),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // Display videos in a grid (2 per row)
-                  mainAxisSpacing: 8.0,
-                  crossAxisSpacing: 8.0,
-                ),
-                itemCount: controller.remoteUids.value.length,
-                itemBuilder: (context, index) {
-                  return Expanded(
-                    child: AgoraVideoView(
-                      onAgoraVideoViewCreated: (viewId) {
-                        debugPrint("onAgoraVideoViewCreated: $viewId");
-                      },
-                      controller: VideoViewController.remote(
-                        rtcEngine: controller.engine,
-                        canvas: VideoCanvas(
-                            uid: controller.remoteUids.value[index]),
-                        connection:
-                            RtcConnection(channelId: controller.channelName),
-                      ),
+            return controller.userId.value != null
+                ? AgoraVideoView(
+                    controller: VideoViewController.remote(
+                      rtcEngine: controller.engine,
+                      canvas: VideoCanvas(uid: controller.userId.value),
+                      connection:
+                          RtcConnection(channelId: controller.channelName),
                     ),
+                  )
+                : const Text(
+                    'Please wait for remote user to join',
+                    textAlign: TextAlign.center,
                   );
-                },
-              ),
-            );
           }),
-          // Local Video for Teacher (Top-Right) and Students (Top)
           Align(
-            alignment: controller.isTeacher.value
-                ? Alignment.topRight
-                : Alignment.topRight,
+            alignment: Alignment.topLeft,
             child: SizedBox(
-              width: 120,
-              height: 120,
-              child: AgoraVideoView(
-                controller: VideoViewController(
-                  rtcEngine: controller.engine,
-                  canvas: const VideoCanvas(uid: 0), // Local user
-                ),
+              width: 100,
+              height: 150,
+              child: Center(
+                child: Obx(() {
+                  return controller.localUserJoined.value
+                      ? AgoraVideoView(
+                          controller: VideoViewController(
+                            rtcEngine: controller.engine,
+                            canvas: const VideoCanvas(uid: 0),
+                          ),
+                        )
+                      : const CircularProgressIndicator();
+                }),
               ),
             ),
           ),
