@@ -19,91 +19,33 @@ class VideoCallController extends GetxController {
   Rx<List<int>> remoteUids = Rx([]);
   Rx<bool> isTeacher = false.obs;
 
+  // ========================== agora for one to one call ======================
   Rx<int?> userId = Rx(null);
   Rx<bool> localUserJoined = false.obs;
 
-//   Future<void> initAgora() async {
-//     // ========================= Request Permissions ====================================
-//     await [Permission.microphone, Permission.camera].request();
-
-//     // Initialize Agora Engine
-//     // _engine = createAgoraRtcEngine();
-//     // engine = createAgoraRtcEngine();
-//     await engine.initialize(RtcEngineContext(appId: appId));
-
-//     // Set event handlers
-//     engine.registerEventHandler(
-//       RtcEngineEventHandler(
-//         onUserJoined: (RtcConnection connection, int elapsed, int uid) {
-//           remoteUids.value.add(uid);
-//           remoteUids.refresh();
-//         },
-//         onUserOffline: (RtcConnection connection, int uid,
-//             UserOfflineReasonType userOfflineReasonType) {
-//           remoteUids.value.remove(uid);
-//           remoteUids.refresh();
-//         },
-//       ),
-//     );
-
-//     // Set channel profile and role
-//     await engine
-//         .setChannelProfile(ChannelProfileType.channelProfileLiveBroadcasting);
-
-//     if (isTeacher.value) {
-//       await engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
-//     } else {
-//       await engine.setClientRole(role: ClientRoleType.clientRoleAudience);
-//     }
-
-//     // Enable the video module
-//     await engine.enableVideo();
-// // Enable local video preview
-//     await engine.startPreview();
-
-//     // Join the channel
-//     await engine.joinChannel(
-//       token: token,
-//       channelId: channelName,
-//       uid: 0,
-//       options: const ChannelMediaOptions(
-//         // Automatically subscribe to all video streams
-//         autoSubscribeVideo: true,
-//         // Automatically subscribe to all audio streams
-//         autoSubscribeAudio: true,
-//         // Publish camera video
-//         publishCameraTrack: true,
-//         // Publish microphone audio
-//         publishMicrophoneTrack: true,
-//       ),
-//     );
-//   }
-
   Future<void> initAgora() async {
-    // Get microphone and camera permissions
+    // ====================================== Get microphone and camera permissions =================================
     await [Permission.microphone, Permission.camera].request();
 
-    // Create RtcEngine instance
-    engine = createAgoraRtcEngine();
-    // Initialize RtcEngine and set the channel profile to live broadcasting
+    // ========================== Initialize RtcEngine and set the channel profile to live broadcasting ======================
     await engine.initialize(RtcEngineContext(
       appId: appId,
       channelProfile: ChannelProfileType.channelProfileCommunication,
     ));
 
-    // Add an event handler
+    //  ========================= Add an event handler =========================================
     engine.registerEventHandler(
       RtcEngineEventHandler(
-        // Occurs when the local user joins the channel successfully
+        // ======================= Occurs when the local user joins the channel successfully ============================
         onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
           localUserJoined.value = true;
         },
-        // Occurs when a remote user join the channel
+        // ======================= Occurs when a remote user join the channel ===================================
         onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
           debugPrint("remote user $remoteUid joined");
           userId.value = remoteUid;
         },
-        // Occurs when a remote user leaves the channel
+        // ======================== Occurs when a remote user leaves the channel =================================
         onUserOffline: (RtcConnection connection, int remoteUid,
             UserOfflineReasonType reason) {
           debugPrint("remote user $remoteUid left channel");
@@ -111,24 +53,38 @@ class VideoCallController extends GetxController {
         },
       ),
     );
-    // Enable the video module
+
+    // ========================== Enable the video module ===========================================================
     await engine.enableVideo();
-    // Enable local video preview
+    // ========================== Enable local video preview ========================================================
     await engine.startPreview();
-    // Join a channel using a temporary token and channel name
+
+    await engine.setVideoEncoderConfiguration(
+      const VideoEncoderConfiguration(
+        dimensions: VideoDimensions(width: 320, height: 180), // Set resolution
+        frameRate: 15, // Set frame rate
+        bitrate: 65, // Set bitrate
+        orientationMode:
+            OrientationMode.orientationModeAdaptive, // Set orientation mode
+        degradationPreference:
+            DegradationPreference.maintainQuality, // Set degradation preference
+      ),
+    );
+
+    // ========================== Join a channel using a temporary token and channel name ===========================
     await engine.joinChannel(
       token: token,
       channelId: channelName,
       options: const ChannelMediaOptions(
-          // Automatically subscribe to all video streams
+          // ======================= Automatically subscribe to all video streams ===================================
           autoSubscribeVideo: true,
-          // Automatically subscribe to all audio streams
+          // ======================= Automatically subscribe to all audio streams ====================================
           autoSubscribeAudio: true,
-          // Publish camera video
+          // ======================= Publish camera video ============================================================
           publishCameraTrack: true,
-          // Publish microphone audio
+          // ======================= Publish microphone audio ========================================================
           publishMicrophoneTrack: true,
-          // Set user role to clientRoleBroadcaster (broadcaster) or clientRoleAudience (audience)
+          // ======================= Set user role to clientRoleBroadcaster (broadcaster) or clientRoleAudience (audience) =========================
           clientRoleType: ClientRoleType.clientRoleBroadcaster),
       uid:
           0, // When you set uid to 0, a user name is randomly generated by the engine
