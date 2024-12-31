@@ -20,52 +20,64 @@ class VideoCallView extends GetView<VideoCallController> {
         children: [
           // Display Remote Users in a Grid
           Obx(() {
-            return Padding(
-              padding: const EdgeInsets.only(
-                  top: 120.0), // Leaves space for local video
-              child: GridView.builder(
-                padding: const EdgeInsets.all(8.0),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // Display videos in a grid (2 per row)
-                  mainAxisSpacing: 8.0,
-                  crossAxisSpacing: 8.0,
-                ),
-                itemCount: controller.remoteUids.value.length,
-                itemBuilder: (context, index) {
-                  return Expanded(
-                    child: AgoraVideoView(
-                      onAgoraVideoViewCreated: (viewId) {
-                        debugPrint("onAgoraVideoViewCreated: $viewId");
-                      },
-                      controller: VideoViewController.remote(
-                        rtcEngine: controller.engine,
-                        canvas: VideoCanvas(
-                            uid: controller.remoteUids.value[index]),
-                        connection:
-                            RtcConnection(channelId: controller.channelName),
+            return controller.remoteUids.value.isEmpty
+                ? const Center(
+                    child: Text('Please wait for another user to join'),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.only(
+                        top: 120.0), // Leaves space for local video
+                    child: GridView.builder(
+                      padding: const EdgeInsets.all(8.0),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount:
+                            2, // Display videos in a grid (2 per row)
+                        mainAxisSpacing: 8.0,
+                        crossAxisSpacing: 8.0,
                       ),
+                      itemCount: controller.remoteUids.value.length,
+                      itemBuilder: (context, index) {
+                        return Expanded(
+                          child: AgoraVideoView(
+                            onAgoraVideoViewCreated: (viewId) {
+                              debugPrint("onAgoraVideoViewCreated: $viewId");
+                            },
+                            controller: VideoViewController.remote(
+                              rtcEngine: controller.engine,
+                              canvas: VideoCanvas(
+                                  uid: controller.remoteUids.value[index]),
+                              connection: RtcConnection(
+                                  channelId: controller.channelName),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   );
-                },
-              ),
-            );
           }),
           // Local Video for Teacher (Top-Right) and Students (Top)
           Align(
             alignment: controller.isTeacher.value
                 ? Alignment.topRight
                 : Alignment.topRight,
-            child: SizedBox(
-              width: 120,
-              height: 120,
-              child: AgoraVideoView(
-                controller: VideoViewController(
-                  rtcEngine: controller.engine,
-                  canvas: const VideoCanvas(uid: 0), // Local user
+            child: Padding(
+              padding: const EdgeInsets.only(right: 20),
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: AgoraVideoView(
+                    controller: VideoViewController(
+                      rtcEngine: controller.engine,
+                      canvas: const VideoCanvas(uid: 0), // Local user
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+          )
         ],
       ),
     );

@@ -38,22 +38,23 @@ class VideoCallController extends GetxController {
           remoteUids.value.remove(uid);
           remoteUids.refresh();
         },
+        onConnectionStateChanged: (connection, state, reason) {},
       ),
     );
 
     // Set channel profile and role
     await engine
-        .setChannelProfile(ChannelProfileType.channelProfileLiveBroadcasting);
+        .setChannelProfile(ChannelProfileType.channelProfileCommunication);
 
     if (isTeacher.value) {
       await engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
     } else {
-      await engine.setClientRole(role: ClientRoleType.clientRoleAudience);
+      await engine.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
     }
 
     // Enable the video module
     await engine.enableVideo();
-// Enable local video preview
+    // Enable local video preview
     await engine.startPreview();
 
     // Join the channel
